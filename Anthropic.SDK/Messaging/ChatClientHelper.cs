@@ -11,7 +11,7 @@ namespace Anthropic.SDK.Messaging
     /// <summary>
     /// Helper class for chat client implementations
     /// </summary>
-    public static class ChatClientHelper
+    internal static class ChatClientHelper
     {
         /// <summary>
         /// Create usage details from usage

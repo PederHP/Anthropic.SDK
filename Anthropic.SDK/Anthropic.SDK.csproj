@@ -36,6 +36,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Anthropic.SDK.Tests, PublicKey=00240000048000009400000006020000002400005253413100040000010001004186F806A8970B87A770FBCB1CB18FD83CAD4AA8B56F2465209A976492C0DB63DB37252773996EFC368FD136FDC28DC19391E7A52D144AADE7048B0CB4542F8C845B83E25A2F80D953151F37444D193EFED3080C8797787C82E06B8C4584AC6D0D4BDF38B7929777C39C553DB77031903955344AD1C785D5636C9812EDEE8EB8</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.AI.Abstractions" Version="9.7.1" />
     <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="8.0.0" />
   </ItemGroup>
