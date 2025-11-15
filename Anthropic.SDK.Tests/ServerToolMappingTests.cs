@@ -82,8 +82,10 @@ namespace Anthropic.SDK.Tests
             Assert.AreEqual("toolu_123", functionResult.CallId);
             Assert.IsNotNull(functionResult.Result);
             
+            // Result should be JSON serialized content
             var resultText = functionResult.Result.ToString();
-            Assert.IsTrue(resultText.Contains("San Francisco Weather"));
+            Assert.IsTrue(resultText.Contains("\"title\":\"San Francisco Weather\"") || 
+                         resultText.Contains("\"Title\":\"San Francisco Weather\""));
             Assert.IsTrue(resultText.Contains("https://weather.com/sf"));
             Assert.IsTrue(resultText.Contains("1 day ago"));
         }
@@ -180,9 +182,13 @@ namespace Anthropic.SDK.Tests
             var functionResult = aiContents[0] as FunctionResultContent;
             Assert.AreEqual("toolu_456", functionResult.CallId);
             
+            // Result should be JSON serialized content
             var resultText = functionResult.Result.ToString();
-            Assert.IsTrue(resultText.Contains("stdout: Hello World"));
-            Assert.IsTrue(resultText.Contains("return_code: 0"));
+            Assert.IsTrue(resultText.Contains("\"stdout\":\"Hello World\"") || 
+                         resultText.Contains("\"Stdout\":\"Hello World\""));
+            Assert.IsTrue(resultText.Contains("\"returnCode\":0") || 
+                         resultText.Contains("\"return_code\":0") ||
+                         resultText.Contains("\"ReturnCode\":0"));
         }
 
         [TestMethod]
@@ -251,6 +257,7 @@ namespace Anthropic.SDK.Tests
             var functionResult = aiContents[0] as FunctionResultContent;
             Assert.AreEqual("toolu_789", functionResult.CallId);
             
+            // Result should be JSON serialized content
             var resultText = functionResult.Result.ToString();
             Assert.IsTrue(resultText.Contains("Repository information"));
         }

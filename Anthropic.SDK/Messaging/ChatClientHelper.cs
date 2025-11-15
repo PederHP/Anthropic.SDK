@@ -343,68 +343,39 @@ namespace Anthropic.SDK.Messaging
                         break;
 
                     case WebSearchToolResultContent wsrc:
-                        // Convert web search tool result content to text representation
-                        var webSearchResultText = new System.Text.StringBuilder();
-                        if (wsrc.Content is not null)
+                        // Convert web search tool result content to JSON representation
+                        var wsrcOptions = new JsonSerializerOptions
                         {
-                            foreach (var resultContent in wsrc.Content)
-                            {
-                                if (resultContent is WebSearchResultContent wsrContent)
-                                {
-                                    webSearchResultText.AppendLine($"Title: {wsrContent.Title}");
-                                    webSearchResultText.AppendLine($"URL: {wsrContent.Url}");
-                                    if (!string.IsNullOrEmpty(wsrContent.PageAge))
-                                        webSearchResultText.AppendLine($"Page Age: {wsrContent.PageAge}");
-                                    webSearchResultText.AppendLine();
-                                }
-                            }
-                        }
-                        contents.Add(new FunctionResultContent(wsrc.ToolUseId, webSearchResultText.ToString())
+                            Converters = { ContentConverter.Instance },
+                            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                        };
+                        contents.Add(new FunctionResultContent(wsrc.ToolUseId, JsonSerializer.Serialize(wsrc.Content, wsrcOptions))
                         {
                             RawRepresentation = wsrc
                         });
                         break;
 
                     case BashCodeExecutionToolResultContent bcetrc:
-                        // Convert bash code execution result to text representation
-                        var bashResultText = new System.Text.StringBuilder();
-                        if (bcetrc.Content is BashCodeExecutionResultContent bcerContent)
+                        // Convert bash code execution result to JSON representation
+                        var bcetrcOptions = new JsonSerializerOptions
                         {
-                            if (!string.IsNullOrEmpty(bcerContent.Stdout))
-                                bashResultText.AppendLine($"stdout: {bcerContent.Stdout}");
-                            if (!string.IsNullOrEmpty(bcerContent.Stderr))
-                                bashResultText.AppendLine($"stderr: {bcerContent.Stderr}");
-                            bashResultText.AppendLine($"return_code: {bcerContent.ReturnCode}");
-                        }
-                        else if (bcetrc.Content is BashCodeExecutionToolResultErrorContent bcetreContent)
-                        {
-                            bashResultText.AppendLine($"error_code: {bcetreContent.ErrorCode}");
-                        }
-                        contents.Add(new FunctionResultContent(bcetrc.ToolUseId, bashResultText.ToString())
+                            Converters = { ContentConverter.Instance },
+                            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                        };
+                        contents.Add(new FunctionResultContent(bcetrc.ToolUseId, JsonSerializer.Serialize(bcetrc.Content, bcetrcOptions))
                         {
                             RawRepresentation = bcetrc
                         });
                         break;
 
                     case TextEditorCodeExecutionToolResultContent tecetrc:
-                        // Convert text editor code execution result to text representation
-                        var textEditorResultText = new System.Text.StringBuilder();
-                        if (tecetrc.Content is TextEditorCodeExecutionResultContent tecerContent)
+                        // Convert text editor code execution result to JSON representation
+                        var tecetrcOptions = new JsonSerializerOptions
                         {
-                            if (tecerContent.IsFileUpdate.HasValue)
-                                textEditorResultText.AppendLine($"is_file_update: {tecerContent.IsFileUpdate.Value}");
-                            if (!string.IsNullOrEmpty(tecerContent.FileType))
-                                textEditorResultText.AppendLine($"file_type: {tecerContent.FileType}");
-                            if (!string.IsNullOrEmpty(tecerContent.Content))
-                                textEditorResultText.AppendLine($"content: {tecerContent.Content}");
-                        }
-                        else if (tecetrc.Content is TextEditorCodeExecutionToolResultErrorContent tecetreContent)
-                        {
-                            textEditorResultText.AppendLine($"error_code: {tecetreContent.ErrorCode}");
-                            if (!string.IsNullOrEmpty(tecetreContent.ErrorMessage))
-                                textEditorResultText.AppendLine($"error_message: {tecetreContent.ErrorMessage}");
-                        }
-                        contents.Add(new FunctionResultContent(tecetrc.ToolUseId, textEditorResultText.ToString())
+                            Converters = { ContentConverter.Instance },
+                            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                        };
+                        contents.Add(new FunctionResultContent(tecetrc.ToolUseId, JsonSerializer.Serialize(tecetrc.Content, tecetrcOptions))
                         {
                             RawRepresentation = tecetrc
                         });
@@ -419,19 +390,13 @@ namespace Anthropic.SDK.Messaging
                         break;
 
                     case MCPToolResultContent mcptrc:
-                        // Convert MCP tool result
-                        var mcpResultText = new System.Text.StringBuilder();
-                        if (mcptrc.Content is not null)
+                        // Convert MCP tool result to JSON representation
+                        var mcptrcOptions = new JsonSerializerOptions
                         {
-                            foreach (var resultContent in mcptrc.Content)
-                            {
-                                if (resultContent is TextContent mcpTextContent)
-                                {
-                                    mcpResultText.AppendLine(mcpTextContent.Text);
-                                }
-                            }
-                        }
-                        contents.Add(new FunctionResultContent(mcptrc.ToolUseId, mcpResultText.ToString())
+                            Converters = { ContentConverter.Instance },
+                            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                        };
+                        contents.Add(new FunctionResultContent(mcptrc.ToolUseId, JsonSerializer.Serialize(mcptrc.Content, mcptrcOptions))
                         {
                             RawRepresentation = mcptrc
                         });

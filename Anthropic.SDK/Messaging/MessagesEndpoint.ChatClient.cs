@@ -11,6 +11,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Anthropic.SDK.Common;
+using Anthropic.SDK.Extensions;
 using Microsoft.Extensions.AI;
 
 namespace Anthropic.SDK.Messaging;
@@ -130,28 +131,16 @@ public partial class MessagesEndpoint : IChatClient
                     !string.IsNullOrEmpty(response.ContentBlock.ToolUseId) &&
                     response.ContentBlock.Content is not null)
                 {
-                    // Convert content to text representation
-                    var resultText = new System.Text.StringBuilder();
-                    foreach (var content in response.ContentBlock.Content)
+                    // Convert content to JSON representation
+                    var jsonOptions = new JsonSerializerOptions
                     {
-                        if (content is TextContent tc)
-                        {
-                            resultText.AppendLine(tc.Text);
-                        }
-                        else if (content is WebSearchResultContent wsrc)
-                        {
-                            resultText.AppendLine($"Title: {wsrc.Title}");
-                            resultText.AppendLine($"URL: {wsrc.Url}");
-                            if (!string.IsNullOrEmpty(wsrc.PageAge))
-                                resultText.AppendLine($"Page Age: {wsrc.PageAge}");
-                            resultText.AppendLine();
-                        }
-                    }
-                    
+                        Converters = { ContentConverter.Instance },
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    };
                     // Emit a FunctionResultContent for the server tool result
                     update.Contents.Add(new FunctionResultContent(
                         response.ContentBlock.ToolUseId,
-                        resultText.ToString())
+                        JsonSerializer.Serialize(response.ContentBlock.Content, jsonOptions))
                     {
                         RawRepresentation = response.ContentBlock
                     });
