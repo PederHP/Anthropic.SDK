@@ -106,6 +106,57 @@ public partial class MessagesEndpoint : IChatClient
             {
                 update.Contents.Add(new TextReasoningContent(null) { ProtectedData = response.ContentBlock.Data });
             }
+
+            // Handle server tool content blocks during streaming
+            if (response.ContentBlock is not null)
+            {
+                // Handle server_tool_use content blocks
+                if (response.ContentBlock.Type == "server_tool_use" && 
+                    !string.IsNullOrEmpty(response.ContentBlock.Id) && 
+                    !string.IsNullOrEmpty(response.ContentBlock.Name))
+                {
+                    // For server tools, we emit a FunctionCallContent during streaming
+                    update.Contents.Add(new FunctionCallContent(
+                        response.ContentBlock.Id,
+                        response.ContentBlock.Name,
+                        new Dictionary<string, object>()));
+                }
+                
+                // Handle tool result content blocks (web_search_tool_result, bash_code_execution_tool_result, etc.)
+                if ((response.ContentBlock.Type == "web_search_tool_result" ||
+                     response.ContentBlock.Type == "bash_code_execution_tool_result" ||
+                     response.ContentBlock.Type == "text_editor_code_execution_tool_result" ||
+                     response.ContentBlock.Type == "mcp_tool_result") &&
+                    !string.IsNullOrEmpty(response.ContentBlock.ToolUseId) &&
+                    response.ContentBlock.Content is not null)
+                {
+                    // Convert content to text representation
+                    var resultText = new System.Text.StringBuilder();
+                    foreach (var content in response.ContentBlock.Content)
+                    {
+                        if (content is TextContent tc)
+                        {
+                            resultText.AppendLine(tc.Text);
+                        }
+                        else if (content is WebSearchResultContent wsrc)
+                        {
+                            resultText.AppendLine($"Title: {wsrc.Title}");
+                            resultText.AppendLine($"URL: {wsrc.Url}");
+                            if (!string.IsNullOrEmpty(wsrc.PageAge))
+                                resultText.AppendLine($"Page Age: {wsrc.PageAge}");
+                            resultText.AppendLine();
+                        }
+                    }
+                    
+                    // Emit a FunctionResultContent for the server tool result
+                    update.Contents.Add(new FunctionResultContent(
+                        response.ContentBlock.ToolUseId,
+                        resultText.ToString())
+                    {
+                        RawRepresentation = response.ContentBlock
+                    });
+                }
+            }
             
             if (response.StreamStartMessage?.Usage is {} startStreamMessageUsage)
             {

@@ -318,6 +318,124 @@ namespace Anthropic.SDK.Messaging
                             trc.ToolUseId,
                             trc.Content));
                         break;
+
+                    // Server tool mappings - these are special server-side tools that return both
+                    // the tool call and result in the same assistant message
+                    case ServerToolUseContent stuc:
+                        // Convert ServerToolInput to a dictionary for FunctionCallContent
+                        var serverToolArgs = new Dictionary<string, object?>();
+                        if (stuc.Input is not null)
+                        {
+                            if (!string.IsNullOrEmpty(stuc.Input.Query))
+                                serverToolArgs["query"] = stuc.Input.Query;
+                            if (!string.IsNullOrEmpty(stuc.Input.Command))
+                                serverToolArgs["command"] = stuc.Input.Command;
+                            if (!string.IsNullOrEmpty(stuc.Input.Path))
+                                serverToolArgs["path"] = stuc.Input.Path;
+                            if (!string.IsNullOrEmpty(stuc.Input.OldStr))
+                                serverToolArgs["old_str"] = stuc.Input.OldStr;
+                            if (!string.IsNullOrEmpty(stuc.Input.NewStr))
+                                serverToolArgs["new_str"] = stuc.Input.NewStr;
+                            if (!string.IsNullOrEmpty(stuc.Input.FileText))
+                                serverToolArgs["file_text"] = stuc.Input.FileText;
+                        }
+                        contents.Add(new FunctionCallContent(stuc.Id, stuc.Name, serverToolArgs));
+                        break;
+
+                    case WebSearchToolResultContent wsrc:
+                        // Convert web search tool result content to text representation
+                        var webSearchResultText = new System.Text.StringBuilder();
+                        if (wsrc.Content is not null)
+                        {
+                            foreach (var resultContent in wsrc.Content)
+                            {
+                                if (resultContent is WebSearchResultContent wsrContent)
+                                {
+                                    webSearchResultText.AppendLine($"Title: {wsrContent.Title}");
+                                    webSearchResultText.AppendLine($"URL: {wsrContent.Url}");
+                                    if (!string.IsNullOrEmpty(wsrContent.PageAge))
+                                        webSearchResultText.AppendLine($"Page Age: {wsrContent.PageAge}");
+                                    webSearchResultText.AppendLine();
+                                }
+                            }
+                        }
+                        contents.Add(new FunctionResultContent(wsrc.ToolUseId, webSearchResultText.ToString())
+                        {
+                            RawRepresentation = wsrc
+                        });
+                        break;
+
+                    case BashCodeExecutionToolResultContent bcetrc:
+                        // Convert bash code execution result to text representation
+                        var bashResultText = new System.Text.StringBuilder();
+                        if (bcetrc.Content is BashCodeExecutionResultContent bcerContent)
+                        {
+                            if (!string.IsNullOrEmpty(bcerContent.Stdout))
+                                bashResultText.AppendLine($"stdout: {bcerContent.Stdout}");
+                            if (!string.IsNullOrEmpty(bcerContent.Stderr))
+                                bashResultText.AppendLine($"stderr: {bcerContent.Stderr}");
+                            bashResultText.AppendLine($"return_code: {bcerContent.ReturnCode}");
+                        }
+                        else if (bcetrc.Content is BashCodeExecutionToolResultErrorContent bcetreContent)
+                        {
+                            bashResultText.AppendLine($"error_code: {bcetreContent.ErrorCode}");
+                        }
+                        contents.Add(new FunctionResultContent(bcetrc.ToolUseId, bashResultText.ToString())
+                        {
+                            RawRepresentation = bcetrc
+                        });
+                        break;
+
+                    case TextEditorCodeExecutionToolResultContent tecetrc:
+                        // Convert text editor code execution result to text representation
+                        var textEditorResultText = new System.Text.StringBuilder();
+                        if (tecetrc.Content is TextEditorCodeExecutionResultContent tecerContent)
+                        {
+                            if (tecerContent.IsFileUpdate.HasValue)
+                                textEditorResultText.AppendLine($"is_file_update: {tecerContent.IsFileUpdate.Value}");
+                            if (!string.IsNullOrEmpty(tecerContent.FileType))
+                                textEditorResultText.AppendLine($"file_type: {tecerContent.FileType}");
+                            if (!string.IsNullOrEmpty(tecerContent.Content))
+                                textEditorResultText.AppendLine($"content: {tecerContent.Content}");
+                        }
+                        else if (tecetrc.Content is TextEditorCodeExecutionToolResultErrorContent tecetreContent)
+                        {
+                            textEditorResultText.AppendLine($"error_code: {tecetreContent.ErrorCode}");
+                            if (!string.IsNullOrEmpty(tecetreContent.ErrorMessage))
+                                textEditorResultText.AppendLine($"error_message: {tecetreContent.ErrorMessage}");
+                        }
+                        contents.Add(new FunctionResultContent(tecetrc.ToolUseId, textEditorResultText.ToString())
+                        {
+                            RawRepresentation = tecetrc
+                        });
+                        break;
+
+                    case MCPToolUseContent mcptuc:
+                        // Convert MCP tool use to FunctionCallContent
+                        contents.Add(new FunctionCallContent(
+                            mcptuc.Id,
+                            mcptuc.Name,
+                            mcptuc.Input is not null ? mcptuc.Input.Deserialize<Dictionary<string, object>>() : null));
+                        break;
+
+                    case MCPToolResultContent mcptrc:
+                        // Convert MCP tool result
+                        var mcpResultText = new System.Text.StringBuilder();
+                        if (mcptrc.Content is not null)
+                        {
+                            foreach (var resultContent in mcptrc.Content)
+                            {
+                                if (resultContent is TextContent mcpTextContent)
+                                {
+                                    mcpResultText.AppendLine(mcpTextContent.Text);
+                                }
+                            }
+                        }
+                        contents.Add(new FunctionResultContent(mcptrc.ToolUseId, mcpResultText.ToString())
+                        {
+                            RawRepresentation = mcptrc
+                        });
+                        break;
                 }
             }
 
