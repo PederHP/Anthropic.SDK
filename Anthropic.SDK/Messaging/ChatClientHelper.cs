@@ -318,6 +318,89 @@ namespace Anthropic.SDK.Messaging
                             trc.ToolUseId,
                             trc.Content));
                         break;
+
+                    // Server tool mappings - these are special server-side tools that return both
+                    // the tool call and result in the same assistant message
+                    case ServerToolUseContent stuc:
+                        // Convert ServerToolInput to a dictionary for FunctionCallContent
+                        var serverToolArgs = new Dictionary<string, object?>();
+                        if (stuc.Input is not null)
+                        {
+                            if (!string.IsNullOrEmpty(stuc.Input.Query))
+                                serverToolArgs["query"] = stuc.Input.Query;
+                            if (!string.IsNullOrEmpty(stuc.Input.Command))
+                                serverToolArgs["command"] = stuc.Input.Command;
+                            if (!string.IsNullOrEmpty(stuc.Input.Path))
+                                serverToolArgs["path"] = stuc.Input.Path;
+                            if (!string.IsNullOrEmpty(stuc.Input.OldStr))
+                                serverToolArgs["old_str"] = stuc.Input.OldStr;
+                            if (!string.IsNullOrEmpty(stuc.Input.NewStr))
+                                serverToolArgs["new_str"] = stuc.Input.NewStr;
+                            if (!string.IsNullOrEmpty(stuc.Input.FileText))
+                                serverToolArgs["file_text"] = stuc.Input.FileText;
+                        }
+                        contents.Add(new FunctionCallContent(stuc.Id, stuc.Name, serverToolArgs));
+                        break;
+
+                    case WebSearchToolResultContent wsrc:
+                        // Convert web search tool result content to JSON representation
+                        var wsrcOptions = new JsonSerializerOptions
+                        {
+                            Converters = { ContentConverter.Instance },
+                            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                        };
+                        contents.Add(new FunctionResultContent(wsrc.ToolUseId, JsonSerializer.Serialize(wsrc.Content, wsrcOptions))
+                        {
+                            RawRepresentation = wsrc
+                        });
+                        break;
+
+                    case BashCodeExecutionToolResultContent bcetrc:
+                        // Convert bash code execution result to JSON representation
+                        var bcetrcOptions = new JsonSerializerOptions
+                        {
+                            Converters = { ContentConverter.Instance },
+                            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                        };
+                        contents.Add(new FunctionResultContent(bcetrc.ToolUseId, JsonSerializer.Serialize(bcetrc.Content, bcetrcOptions))
+                        {
+                            RawRepresentation = bcetrc
+                        });
+                        break;
+
+                    case TextEditorCodeExecutionToolResultContent tecetrc:
+                        // Convert text editor code execution result to JSON representation
+                        var tecetrcOptions = new JsonSerializerOptions
+                        {
+                            Converters = { ContentConverter.Instance },
+                            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                        };
+                        contents.Add(new FunctionResultContent(tecetrc.ToolUseId, JsonSerializer.Serialize(tecetrc.Content, tecetrcOptions))
+                        {
+                            RawRepresentation = tecetrc
+                        });
+                        break;
+
+                    case MCPToolUseContent mcptuc:
+                        // Convert MCP tool use to FunctionCallContent
+                        contents.Add(new FunctionCallContent(
+                            mcptuc.Id,
+                            mcptuc.Name,
+                            mcptuc.Input is not null ? mcptuc.Input.Deserialize<Dictionary<string, object>>() : null));
+                        break;
+
+                    case MCPToolResultContent mcptrc:
+                        // Convert MCP tool result to JSON representation
+                        var mcptrcOptions = new JsonSerializerOptions
+                        {
+                            Converters = { ContentConverter.Instance },
+                            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                        };
+                        contents.Add(new FunctionResultContent(mcptrc.ToolUseId, JsonSerializer.Serialize(mcptrc.Content, mcptrcOptions))
+                        {
+                            RawRepresentation = mcptrc
+                        });
+                        break;
                 }
             }
 

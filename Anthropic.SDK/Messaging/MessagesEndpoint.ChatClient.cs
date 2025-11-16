@@ -11,6 +11,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Anthropic.SDK.Common;
+using Anthropic.SDK.Extensions;
 using Microsoft.Extensions.AI;
 
 namespace Anthropic.SDK.Messaging;
@@ -105,6 +106,45 @@ public partial class MessagesEndpoint : IChatClient
             if (!string.IsNullOrEmpty(response.ContentBlock?.Data))
             {
                 update.Contents.Add(new TextReasoningContent(null) { ProtectedData = response.ContentBlock.Data });
+            }
+
+            // Handle server tool content blocks during streaming
+            if (response.ContentBlock is not null)
+            {
+                // Handle server_tool_use content blocks
+                if (response.ContentBlock.Type == "server_tool_use" && 
+                    !string.IsNullOrEmpty(response.ContentBlock.Id) && 
+                    !string.IsNullOrEmpty(response.ContentBlock.Name))
+                {
+                    // For server tools, we emit a FunctionCallContent during streaming
+                    update.Contents.Add(new FunctionCallContent(
+                        response.ContentBlock.Id,
+                        response.ContentBlock.Name,
+                        new Dictionary<string, object>()));
+                }
+                
+                // Handle tool result content blocks (web_search_tool_result, bash_code_execution_tool_result, etc.)
+                if ((response.ContentBlock.Type == "web_search_tool_result" ||
+                     response.ContentBlock.Type == "bash_code_execution_tool_result" ||
+                     response.ContentBlock.Type == "text_editor_code_execution_tool_result" ||
+                     response.ContentBlock.Type == "mcp_tool_result") &&
+                    !string.IsNullOrEmpty(response.ContentBlock.ToolUseId) &&
+                    response.ContentBlock.Content is not null)
+                {
+                    // Convert content to JSON representation
+                    var jsonOptions = new JsonSerializerOptions
+                    {
+                        Converters = { ContentConverter.Instance },
+                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                    };
+                    // Emit a FunctionResultContent for the server tool result
+                    update.Contents.Add(new FunctionResultContent(
+                        response.ContentBlock.ToolUseId,
+                        JsonSerializer.Serialize(response.ContentBlock.Content, jsonOptions))
+                    {
+                        RawRepresentation = response.ContentBlock
+                    });
+                }
             }
             
             if (response.StreamStartMessage?.Usage is {} startStreamMessageUsage)
